@@ -46,5 +46,5 @@ export_model.py     run in the notebook to create artifacts/
 requirements.txt    dependencies
 render.yaml         Render deploy settings
 ```
-
+The export script and web app were built with help from Claude (AI). The data work, model training and evaluation were done by me in the notebook..
 
