@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sentinel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300;1,9..144,600&family=JetBrains+Mono:wght@400;600&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07060b; --glass:rgba(20,17,31,.62); --line:rgba(255,255,255,.09); --ink:#f1ecfa; --mute:#8b83a3;
+  --safe:#5ef2c0; --risk:#ff5a4d; --warm:#ffb347; --violet:#aa96ff;
+  --mono:'JetBrains Mono',ui-monospace,monospace; --serif:'Fraunces',Georgia,serif; --sans:'Instrument Sans',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+body{min-height:100vh;overflow-x:hidden;background:
+  radial-gradient(1000px 600px at 50% -20%,rgba(170,150,255,.13),transparent 65%),var(--bg)}
+.app{max-width:1280px;margin:0 auto;padding:0 28px 48px}
+header{display:flex;justify-content:space-between;align-items:center;padding:26px 0 18px;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:14px}
+h1{font-family:var(--serif);font-weight:300;font-size:38px;letter-spacing:-.03em}
+h1 i{font-weight:600}
+.sub{font:11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--mute)}
+.ctl{display:flex;gap:8px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--mute);display:inline-block;margin-right:8px}
+.dot.on{background:var(--safe);box-shadow:0 0 10px var(--safe)}
+button{font:600 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink);background:rgba(255,255,255,.05);
+  border:1px solid var(--line);border-radius:999px;padding:11px 18px;cursor:pointer;transition:transform .15s,background .2s,border-color .2s}
+button:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.3)}
+button.go{background:var(--ink);color:#100d18;border-color:var(--ink)}
+
+.stage{position:relative;height:clamp(500px,68vh,660px);border-radius:28px;border:1px solid var(--line);overflow:hidden;
+  background:radial-gradient(700px 400px at 50% 50%,rgba(25,20,44,.9),rgba(8,7,13,.95));transition:box-shadow .8s}
+.stage.safe{box-shadow:inset 0 0 140px rgba(94,242,192,.10),0 0 60px rgba(94,242,192,.05)}
+.stage.risk{box-shadow:inset 0 0 160px rgba(255,90,77,.20),0 0 70px rgba(255,90,77,.10)}
+canvas{position:absolute;inset:0;width:100%;height:100%}
+.glass{position:absolute;background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid var(--line);border-radius:20px;padding:20px}
+.eyebrow{font:10.5px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--mute)}
+.tx{left:22px;top:22px;width:310px}
+.tx.in{animation:drop .7s cubic-bezier(.2,.9,.2,1)}
+@keyframes drop{from{opacity:0;transform:translateX(-40px) scale(.96)}to{opacity:1;transform:none}}
+.amt{font-family:var(--serif);font-weight:300;font-size:58px;letter-spacing:-.04em;line-height:1;margin:12px 0 6px}
+.when{font:12px var(--mono);color:var(--violet)}
+.spec{position:relative;height:84px;margin:18px 0 8px}
+.spec:before{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:var(--line)}
+.spec i{position:absolute;width:calc(100%/28 - 3px);border-radius:3px;transform:scaleY(0);animation:grow .5s forwards cubic-bezier(.2,.9,.2,1)}
+@keyframes grow{to{transform:scaleY(1)}}
+.cap{font:10px var(--mono);color:var(--mute);line-height:1.5}
+.vd{right:22px;top:22px;width:310px;text-align:right}
+.pct{font-family:var(--serif);font-weight:300;font-size:112px;line-height:.9;letter-spacing:-.05em;margin:10px 0 4px}
+.pct small{font-size:34px;color:var(--mute);letter-spacing:0}
+.stamp{display:inline-block;font:600 13px var(--mono);letter-spacing:.22em;padding:8px 16px;border:1.5px solid currentColor;border-radius:10px;
+  transform:rotate(2deg);color:var(--mute);transition:color .4s,transform .4s}
+.stamp.pop{animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{from{transform:rotate(2deg) scale(1.6);opacity:0}to{transform:rotate(2deg) scale(1);opacity:1}}
+.th{font:10px var(--mono);color:var(--warm);margin-top:12px}
+.truth{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);opacity:0;transform:translateY(8px);transition:all .6s}
+.truth.show{opacity:1;transform:none}
+.truth b{display:block;font:600 15px var(--mono);margin:6px 0 4px}
+.truth span{font:12px var(--sans);color:var(--mute)}
+.hint{position:absolute;left:0;right:0;bottom:14px;text-align:center;font:10px var(--mono);letter-spacing:.14em;color:var(--mute);text-transform:uppercase}
+
+.board{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}
+.tile{border:1px solid var(--line);background:rgba(255,255,255,.025);border-radius:18px;padding:16px 18px}
+.tile b{display:block;font:300 44px var(--serif);letter-spacing:-.03em;margin-top:4px}
+.tile.g b{color:var(--safe)}.tile.r b{color:var(--risk)}.tile.w b{color:var(--warm)}
+.hist{display:flex;gap:6px;flex-wrap:wrap;margin:16px 2px 0;min-height:18px;align-items:center}
+.hist .eyebrow{margin-right:8px}
+.hist i{width:14px;height:14px;border-radius:50%;animation:pop2 .4s}
+@keyframes pop2{from{transform:scale(0)}to{transform:scale(1)}}
+.card{margin-top:14px;border:1px solid var(--line);border-radius:18px;padding:18px 20px;font:12px var(--mono);color:var(--mute);line-height:1.7}
+.card b{color:var(--ink);font-weight:600}
+details{margin-top:14px;border:1px solid var(--line);border-radius:18px;padding:6px 20px}
+summary{cursor:pointer;padding:14px 0;font:600 12px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--warm)}
+.notes{padding:0 0 16px;font-size:14px;line-height:1.7;color:#cfc8de}
+.notes p+p{margin-top:10px}.notes h4{font:600 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--violet);margin:16px 0 6px}
+@media(max-width:900px){
+  .app{padding:0 14px 40px}h1{font-size:30px}
+  .stage{height:auto;display:flex;flex-direction:column;gap:12px;padding:12px;overflow:visible}
+  .glass{position:relative;left:auto;right:auto;top:auto;width:auto}.vd{text-align:left}
+  canvas{position:relative;height:340px;order:3}.hint{display:none}.pct{font-size:84px}
+  .board{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand"><h1>Sentinel <i>/ live</i></h1><span class="sub">a neural network watching card transactions</span></div>
+    <div class="ctl">
+      <span class="sub"><span class="dot" id="dot"></span><span id="status">connecting</span></span>
+      <button id="bAuto">Auto: on</button>
+      <button class="go" id="bFeed">Feed next</button>
+    </div>
+  </header>
+
+  <section class="stage" id="stage">
+    <canvas id="cv"></canvas>
+    <div class="glass tx" id="tx">
+      <div class="eyebrow" id="txn">incoming transaction</div>
+      <div class="amt" id="amt">0.00</div>
+      <div class="when" id="when">waiting</div>
+      <div class="spec" id="spec"></div>
+      <div class="cap">28 anonymised signals (V1 to V28). Above the line is positive, below is negative.</div>
+    </div>
+    <div class="glass vd" id="vd">
+      <div class="eyebrow">network says</div>
+      <div class="pct"><span id="pct">0.0</span><small>%</small></div>
+      <span class="stamp" id="stamp">STANDBY</span>
+      <div class="th" id="th"></div>
+      <div class="truth" id="truth"><div class="eyebrow">ground truth</div><b id="tl"></b><span id="to"></span></div>
+    </div>
+    <div class="hint">press space to feed the next transaction</div>
+  </section>
+
+  <section class="board">
+    <div class="tile"><span class="eyebrow">Seen</span><b id="nSeen">0</b></div>
+    <div class="tile g"><span class="eyebrow">Frauds caught</span><b id="nTp">0</b></div>
+    <div class="tile r"><span class="eyebrow">Frauds missed</span><b id="nFn">0</b></div>
+    <div class="tile w"><span class="eyebrow">False alarms</span><b id="nFp">0</b></div>
+  </section>
+  <div class="hist" id="hist"><span class="eyebrow">history</span></div>
+  <div class="card" id="card"></div>
+
+  <details>
+    <summary>How it works and what it cannot do</summary>
+    <div class="notes">
+      <p>This is a small feed forward neural network. A transaction is 30 numbers: Time, Amount, and 28 anonymised components (V1 to V28) produced by PCA. They cannot be read as real world fields such as merchant or location. The numbers enter the first layer of nodes on the left. Each node multiplies its inputs by learned weights, adds a bias and passes the result through a nonlinear function. The last node outputs a probability of fraud.</p>
+      <p>A transaction is flagged when that probability is at or above the threshold. The threshold was chosen on a validation set to favour catching fraud over avoiding false alarms. The brightness of each node shows how strongly it fired for this input. That shows the computation, not a human readable reason for the decision.</p>
+      <h4>What the demo stream is</h4>
+      <p>Every transaction shown comes from the held out test set, which the network never trained on. The pool is shuffled and contains far more fraud than real card traffic, where fraud is well under 1 percent, so the tallies above are not real world rates. The honest figures are in the model card line.</p>
+      <h4>Limits</h4>
+      <p>Trained on one public dataset of European card transactions from 2013 with very few fraud cases. The test figures come from about 98 frauds, so they can move by several points. About one in three alerts is a false alarm. Only logistic regression and untuned gradient boosting were compared against it. This is a learning project and must not be used for real payment decisions.</p>
+    </div>
+  </details>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const HOP=.55, NEUTRAL='170,150,255';
+let META,sizes=[],order=[],oi=0,cur=0,auto=true,autoT,trace=null,flagged=false,t0=0,parts=[],stars=[];
+let W=0,H=0,ML=30,MR=30,seen=0,tp=0,fn=0,fp=0,tn=0;
+const cv=$('cv'),ctx=cv.getContext('2d');
+
+for(let i=0;i<110;i++)stars.push({x:Math.random(),y:Math.random(),r:Math.random()*1.2+.3,p:Math.random()*6.3});
+
+function fit(){const r=devicePixelRatio||1,b=cv.getBoundingClientRect();W=b.width;H=b.height;cv.width=W*r;cv.height=H*r;ctx.setTransform(r,0,0,r,0,0);
+  const wide=innerWidth>900;ML=wide?370:34;MR=wide?370:34}
+addEventListener('resize',fit);
+
+async function init(){
+  try{META=await (await fetch('/api/meta')).json()}catch(e){$('status').textContent='offline';return}
+  sizes=META.sizes;shuffle();
+  const m=META.metrics,th=Math.round(META.threshold*100),fr=Math.round(META.frauds/META.n*100);
+  $('th').textContent='flag at '+th+'% or above';
+  $('card').innerHTML='<b>Model card.</b> On unseen test data at the '+th+'% threshold: recall <b>'+Math.round(m.recall*100)+'%</b>, precision <b>'+Math.round(m.precision*100)+'%</b>. Validation PR-AUC: network <b>'+m.cv_pr_auc.toFixed(3)+'</b>, logistic regression '+m.lr_pr_auc.toFixed(3)+', untuned gradient boosting '+m.gb_pr_auc.toFixed(3)+'. This demo stream is '+fr+'% fraud, real traffic is far lower.';
+  $('status').textContent='model live';$('dot').classList.add('on');
+  fit();requestAnimationFrame(draw);
+  setTimeout(feed,700);
+}
+function shuffle(){order=[...Array(META.n).keys()];for(let i=order.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[order[i],order[j]]=[order[j],order[i]]}oi=0}
+function nextIdx(){if(oi>=order.length)shuffle();return order[oi++]}
+
+function fmtTime(s){const d=Math.floor(s/86400)+1,r=s%86400,h=String(Math.floor(r/3600)).padStart(2,'0'),m=String(Math.floor(r%3600/60)).padStart(2,'0'),x=String(Math.floor(r%60)).padStart(2,'0');return 'day '+d+' · '+h+':'+m+':'+x}
+
+async function feed(){
+  const my=++cur;clearTimeout(autoT);
+  let d;try{d=await (await fetch('/api/feed?i='+nextIdx())).json()}catch(e){$('status').textContent='offline';return}
+  if(my!==cur)return;
+  showTx(d);resetVerdict();
+  trace=d.layers;flagged=d.flagged;t0=performance.now();buildParts();
+  const arrive=(sizes.length-1)*HOP*1000+120;
+  setTimeout(()=>{if(my===cur)reveal(d)},arrive);
+  setTimeout(()=>{if(my===cur){truth(d);if(auto)autoT=setTimeout(feed,1700)}},arrive+1500);
+}
+
+function showTx(d){
+  const x=d.features,tx=$('tx');
+  $('txn').textContent='incoming transaction #'+(seen+1);
+  $('amt').textContent=x[x.length-1].toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+  $('when').textContent=fmtTime(x[0]);
+  const v=d.layers[0].slice(1,29);
+  $('spec').innerHTML=v.map((a,i)=>{const c=Math.max(-4,Math.min(4,a)),h=Math.abs(c)/4*50,left=i*100/28;
+    const up=c>=0,bg=up?'linear-gradient(#ff8bd6,#aa96ff)':'linear-gradient(#5ef2c0,#3aa6ff)';
+    return `<i style="left:${left}%;height:${Math.max(h,2)}%;${up?'bottom:50%;transform-origin:bottom':'top:50%;transform-origin:top'};background:${bg};animation-delay:${i*14}ms"></i>`}).join('');
+  tx.classList.remove('in');void tx.offsetWidth;tx.classList.add('in');
+}
+function resetVerdict(){
+  $('stage').classList.remove('safe','risk');
+  $('pct').textContent='···';const s=$('stamp');s.textContent='THINKING';s.style.color='var(--violet)';s.classList.remove('pop');
+  $('truth').classList.remove('show');
+}
+function reveal(d){
+  $('stage').classList.add(d.flagged?'risk':'safe');
+  const s=$('stamp');s.textContent=d.flagged?'FLAGGED':'CLEARED';s.style.color=d.flagged?'var(--risk)':'var(--safe)';
+  s.classList.remove('pop');void s.offsetWidth;s.classList.add('pop');
+  const to=d.probability*100,el=$('pct'),st=performance.now(),dp=to<1?2:1;
+  const f=t=>{const k=Math.min((t-st)/800,1),e=1-Math.pow(1-k,3);el.textContent=(to*e).toFixed(dp);if(k<1)requestAnimationFrame(f)};requestAnimationFrame(f);
+}
+function truth(d){
+  const y=d.label,fl=d.flagged;let tag,msg,good;
+  if(y&&fl){tp++;tag='REAL FRAUD';msg='Caught. The network flagged it.';good=1}
+  else if(y&&!fl){fn++;tag='REAL FRAUD';msg='Missed. The network cleared a real fraud.';good=0}
+  else if(!y&&fl){fp++;tag='LEGITIMATE';msg='False alarm. A genuine purchase was flagged.';good=0}
+  else{tn++;tag='LEGITIMATE';msg='Correct. A genuine purchase was cleared.';good=1}
+  seen++;$('nSeen').textContent=seen;$('nTp').textContent=tp;$('nFn').textContent=fn;$('nFp').textContent=fp;
+  $('tl').textContent=tag;$('tl').style.color=good?'var(--safe)':(y?'var(--risk)':'var(--warm)');$('to').textContent=msg;
+  $('truth').classList.add('show');
+  const h=$('hist'),i=document.createElement('i');i.style.background=good?'var(--safe)':(y?'var(--risk)':'var(--warm)');
+  i.title=msg;h.appendChild(i);while(h.children.length>41)h.removeChild(h.children[1]);
+}
+
+function buildParts(){
+  parts=[];const L=sizes.length;
+  for(let l=0;l<L-1;l++){
+    const a=trace[l],mx=Math.max(1e-6,...a.map(Math.abs));let n=0,g=0;
+    while(n<46&&g++<600){const i=Math.random()*sizes[l]|0;if(Math.random()<Math.abs(a[i])/mx){parts.push({l,i,j:Math.random()*sizes[l+1]|0,s:l*HOP+Math.random()*.18,d:HOP*.85});n++}}
+  }
+}
+function pos(l,i){const L=sizes.length,n=sizes[l],g=Math.min(18,(H-80)/Math.max(n,1));return[ML+l*(W-ML-MR)/(L-1),H/2+(i-(n-1)/2)*g]}
+function norm(l){const a=trace[l],mx=Math.max(1e-6,...a.map(Math.abs));return a.map(v=>Math.min(1,Math.abs(v)/(l==0?3:mx)))}
+const cl=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+
+function draw(now){
+  ctx.clearRect(0,0,W,H);
+  for(const s of stars){ctx.fillStyle=`rgba(255,255,255,${.12+.18*Math.sin(now/1400+s.p)})`;ctx.beginPath();ctx.arc(s.x*W,s.y*H,s.r,0,7);ctx.fill()}
+  const L=sizes.length;if(!L){requestAnimationFrame(draw);return}
+  const t=trace?(now-t0)/1000:0,wave=t/HOP,done=trace&&wave>=L-1;
+  const col=done?(flagged?'255,90,77':'94,242,192'):NEUTRAL;
+  const N=trace?trace.map((_,l)=>norm(l)):null;
+  for(let l=0;l<L-1;l++){
+    const k=trace?cl(wave-l):0;
+    for(let i=0;i<sizes[l];i++){const[a,c]=pos(l,i),s=N?N[l][i]:0;
+      for(let j=0;j<sizes[l+1];j++){const[d,e]=pos(l+1,j);
+        ctx.strokeStyle=`rgba(${trace?col:NEUTRAL},${.035+k*s*.24})`;ctx.lineWidth=.6+k*s*1.1;ctx.beginPath();ctx.moveTo(a,c);ctx.lineTo(d,e);ctx.stroke()}}
+  }
+  if(trace){
+    ctx.shadowColor=`rgb(${col})`;ctx.shadowBlur=10;
+    for(const p of parts){const k=(t-p.s)/p.d;if(k<=0||k>=1)continue;const e=k*k*(3-2*k),[a,c]=pos(p.l,p.i),[d,f]=pos(p.l+1,p.j);
+      ctx.fillStyle=`rgba(${col},${Math.sin(k*Math.PI)})`;ctx.beginPath();ctx.arc(a+(d-a)*e,c+(f-c)*e,2.2,0,7);ctx.fill()}
+    ctx.shadowBlur=0;
+    const ox=pos(L-1,0)[0],oy=pos(L-1,0)[1],bt=t-(L-1)*HOP;
+    if(bt>0&&bt<1.4)for(let r=0;r<2;r++){const k=cl((bt-r*.25)/1.1);if(k<=0||k>=1)continue;
+      ctx.strokeStyle=`rgba(${col},${.7*(1-k)})`;ctx.lineWidth=2;ctx.beginPath();ctx.arc(ox,oy,16+k*170,0,7);ctx.stroke()}
+  }
+  for(let l=0;l<L;l++){for(let i=0;i<sizes[l];i++){const[x,y]=pos(l,i);
+    const on=trace?cl(wave-l+1):0,idle=.12+.1*Math.sin(now/900+i+l*2),v=trace?(N[l][i]*on):idle,last=l==L-1,r=last?16:5+v*3.5;
+    if(v>.06){ctx.shadowColor=`rgb(${trace?col:NEUTRAL})`;ctx.shadowBlur=16*v+(last&&done?22:0)}
+    ctx.fillStyle=(trace&&(on<=0||v<.02))?'#2b2543':`rgba(${trace?col:NEUTRAL},${.22+.78*Math.min(1,v)})`;
+    ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();ctx.shadowBlur=0}}
+  ctx.fillStyle='#8b83a3';ctx.font='10px JetBrains Mono';ctx.textAlign='center';
+  for(let l=0;l<L;l++){ctx.fillText(l==0?'input · '+sizes[0]:l==L-1?'fraud probability':'hidden · '+sizes[l],pos(l,0)[0],H-14)}
+  requestAnimationFrame(draw)
+}
+
+$('bFeed').onclick=feed;
+$('bAuto').onclick=()=>{auto=!auto;$('bAuto').textContent='Auto: '+(auto?'on':'off');clearTimeout(autoT);if(auto)autoT=setTimeout(feed,600)};
+addEventListener('keydown',e=>{if(e.code==='Space'&&e.target===document.body){e.preventDefault();feed()}});
+init();
+</script>
+</body>
+</html>
